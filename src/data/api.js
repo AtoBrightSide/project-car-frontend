@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const apiUrl = "https://getzauto.herokuapp.com/cars/";
+const apiUrl = "https://getzcarsellbackend.onrender.com/cars/";
 
 export const getCarsAPI = async (pageNumber = 1, filterOptions) => {
   try {
