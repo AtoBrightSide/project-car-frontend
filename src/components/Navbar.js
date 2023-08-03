@@ -1,9 +1,9 @@
-import { useState } from "react";
+// import { useState } from "react";
 
 import { Nav, Logo, MenuLink } from "../styles/Navbar.style";
 
 export default function Navbar({ openInfoModal }) {
-  const [isOpen, setisOpen] = useState(true);
+  // const [isOpen, setisOpen] = useState(true);
 
   return (
     <Nav>
