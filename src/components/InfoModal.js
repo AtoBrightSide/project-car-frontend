@@ -30,19 +30,19 @@ export default function InfoModal({ showInfoModal, closeInfoModal }) {
                 ሁሉንም አስፈላጊ መረጃ በማያያዝ{" "}
                 <span style={{ fontWeight: 500 }}>Telegram</span> ላይ -- 
                 <a
-                  href="https://t.me/getzauto"
+                  href="https://t.me/GetzAutomotive"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  @Getzauto
+                  @GetzAutomotive
                 </a>
                 ወይም
                 <a
-                  href="https://t.me/getzauto2"
+                  href="https://t.me/GetzAutomotive2"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  @Getzauto2
+                  @GetzAutomotive2
                 </a>
                 በመጫን ይላኩልን (የሚልኩልን ዋጋ የፍተሻ ዋጋ ነዉ)
               </li>
