@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 import Car from "../components/Car";
 import EmptyState from "../components/EmptyState";
@@ -7,7 +8,6 @@ import FilterBarWrapper from "../components/FilterBar";
 import MobileFilterBarWrapper from "../components/MobileFilterBar";
 import Navbar from "../components/Navbar";
 import Pagination from "../components/Pagination";
-
 import InfoModal from "../components/InfoModal";
 
 import { ActionWrapper } from "../styles/Herosection.style";
@@ -18,90 +18,108 @@ import { ModalContainer } from "../styles/Modal.style";
 import { getCarsAPI } from "../data/api";
 
 export default function CarPage() {
-  const [cars, setCars] = useState(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
-
-  // for pagination
   const [pageNumber, setPageNumber] = useState(1);
   const [filterRules, setFilterRules] = useState({});
-
-  // for responsiveness
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
-  // to navigate to Error page
+  const searchInputRef = useRef(null);
   const navigate = useNavigate();
 
-  const handleFilter = async () => {
-    let options = ["start", "end", "min", "max", "transmission"];
+  // Fetch cars data with React Query
+  const {
+    data: cars,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["cars", pageNumber, filterRules],
+    queryFn: () => getCarsAPI(pageNumber, filterRules),
+    keepPreviousData: true,
+  });
+
+  // Handle error cases
+  useEffect(() => {
+    if (isError && error) {
+      console.error("Error fetching cars data:", error);
+      navigate("/error", { replace: true });
+    }
+  }, [isError, error, navigate]);
+
+  const handleFilter = useCallback(() => {
+    const options = ["start", "end", "min", "max", "transmission"];
+    const newFilterRules = { ...filterRules };
 
     options.forEach((option) => {
-      filterRules[option] = document.querySelector(`[name=${option}]`)?.value;
-    });
-
-    filterRules.keyword = document.querySelector("[name='search']")?.value;
-    filterRules.loan = document.querySelector("[name='loan'")?.checked;
-
-    setFilterRules({ ...filterRules });
-    setPageNumber(1);
-  };
-
-  const clearFilter = async () => {
-    let options = ["start", "end", "min", "max", "transmission", "search"];
-
-    options.forEach((option) => {
-      if (document.querySelector(`[name=${option}]`)) {
-        document.querySelector(`[name=${option}]`).value = "";
+      const element = document.querySelector(`[name=${option}]`);
+      if (element) {
+        newFilterRules[option] = element.value;
       }
     });
 
-    if (document.querySelector("[name='loan']")) {
-      document.querySelector("[name='loan']").checked = false;
+    if (searchInputRef.current) {
+      newFilterRules.keyword = searchInputRef.current.value;
+    }
+
+    const loanElement = document.querySelector("[name='loan']");
+    if (loanElement) {
+      newFilterRules.loan = loanElement.checked;
+    }
+
+    setFilterRules(newFilterRules);
+    setPageNumber(1);
+  }, [filterRules]);
+
+  const clearFilter = useCallback(() => {
+    const options = ["start", "end", "min", "max", "transmission", "search"];
+
+    options.forEach((option) => {
+      const element = document.querySelector(`[name=${option}]`);
+      if (element) {
+        element.value = "";
+      }
+    });
+
+    const loanElement = document.querySelector("[name='loan']");
+    if (loanElement) {
+      loanElement.checked = false;
     }
 
     setFilterRules({});
-  };
-
-  useEffect(() => {
-    const getCars = async () => {
-      // To resume loader
-      setCars(null);
-
-      try {
-        const carsList = await getCarsAPI(pageNumber, filterRules);
-        setCars(carsList);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    getCars();
-  }, [pageNumber, filterRules]);
-
-  useEffect(() => {
-    window.addEventListener("resize", () => setWindowWidth(window.innerWidth));
-
-    return function cleanup() {
-      window.removeEventListener("resize", () =>
-        setWindowWidth(window.innerWidth)
-      );
-    };
   }, []);
 
+  // Window resize handler
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Back to top button visibility handler
   useEffect(() => {
     const revealBackToTopButton = () => {
-      if (document.documentElement.scrollTop > 20) {
-        document.querySelector(".back-to-top").style.visibility = "visible";
-      } else {
-        document.querySelector(".back-to-top").style.visibility = "hidden";
+      const backToTopButton = document.querySelector(".back-to-top");
+      if (backToTopButton) {
+        backToTopButton.style.visibility =
+          document.documentElement.scrollTop > 20 ? "visible" : "hidden";
       }
     };
 
     window.addEventListener("scroll", revealBackToTopButton);
-
-    return function cleanup() {
-      window.removeEventListener("scroll", revealBackToTopButton);
-    };
+    return () => window.removeEventListener("scroll", revealBackToTopButton);
   }, []);
+
+  const handleBackToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    handleFilter();
+  };
 
   return (
     <>
@@ -111,7 +129,7 @@ export default function CarPage() {
         closeInfoModal={() => setShowInfoModal(false)}
       />
 
-      {!cars && (
+      {isLoading && (
         <ModalContainer loader>
           <LoaderContainer>
             <Loader />
@@ -122,17 +140,20 @@ export default function CarPage() {
 
       <ActionWrapper>
         <h1>Find cars by Make, Model or Keyword</h1>
-        <form
-          action=""
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleFilter();
-          }}
-        >
-          <input type="search" name="search" placeholder="Enter keywords..." />
+        <form action="" onSubmit={handleFormSubmit}>
+          <input
+            type="search"
+            name="search"
+            placeholder="Enter keywords..."
+            ref={searchInputRef}
+          />
           <div className="actions">
             <input type="submit" value="Search" className="actions__submit" />
-            <button onClick={clearFilter} className="actions__clear">
+            <button
+              type="button"
+              onClick={clearFilter}
+              className="actions__clear"
+            >
               Clear
             </button>
           </div>
@@ -145,7 +166,7 @@ export default function CarPage() {
         )}
       </ActionWrapper>
 
-      {cars && (
+      {!isLoading && cars && (
         <>
           {cars.data?.length ? (
             <>
@@ -154,15 +175,7 @@ export default function CarPage() {
                 sortUtil={filterRules}
                 updateSortUtil={setFilterRules}
               />
-              <BackToTop
-                className="back-to-top"
-                onClick={() =>
-                  window.scrollTo({
-                    top: 0,
-                    behavior: "smooth",
-                  })
-                }
-              />
+              <BackToTop className="back-to-top" onClick={handleBackToTop} />
               <Pagination
                 currentPage={pageNumber}
                 onPageChange={(page) => setPageNumber(page)}
@@ -170,8 +183,6 @@ export default function CarPage() {
                 totalCount={cars.amountOfCars}
               />
             </>
-          ) : cars.message ? (
-            navigate("/error", { replace: true })
           ) : (
             <EmptyState />
           )}

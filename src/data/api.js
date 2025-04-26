@@ -1,23 +1,42 @@
 import axios from "axios";
 
-const apiUrl = "https://getzcarsellbackend.onrender.com/cars/";
+const apiClient = axios.create({
+  baseURL: "https://ga-server-1763.onrender.com",
+  timeout: 15000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
-export const getCarsAPI = async (pageNumber = 1, filterOptions) => {
+// Add response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error("API Error:", error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);
+
+export const getCarsAPI = async (pageNumber = 1, filterOptions = {}) => {
   try {
-    let filterQueryString = "";
+    // Build query params
+    const params = { page: pageNumber, ...filterOptions };
 
-    for (let key in filterOptions) {
-      filterQueryString += `&${key}=${
-        filterOptions[key] ? filterOptions[key] : ""
-      }`;
-    }
+    // Remove empty params
+    Object.keys(params).forEach((key) => {
+      if (
+        params[key] === "" ||
+        params[key] === undefined ||
+        params[key] === null
+      ) {
+        delete params[key];
+      }
+    });
 
-    const { data } = await axios.get(
-      `${apiUrl}?page=${pageNumber}${filterQueryString}`
-    );
-
+    const { data } = await apiClient.get("/cars/", { params });
     return data;
   } catch (error) {
-    console.log(error);
+    console.error("Failed to fetch cars:", error);
+    throw error;
   }
 };
