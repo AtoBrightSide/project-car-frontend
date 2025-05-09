@@ -1,6 +1,8 @@
 import styled from "styled-components";
 
 export const Nav = styled.div`
+  margin-left: 2rem;
+  margin-right: 2rem;
   padding: 0 var(--spacing-medium);
   padding-right: 0;
   display: flex;
@@ -9,6 +11,8 @@ export const Nav = styled.div`
   flex-wrap: wrap;
 
   @media (max-width: 768px) {
+    margin-left: 0;
+    margin-right: 0;
     padding: 0;
   }
 `;
@@ -40,9 +44,27 @@ export const MenuLink = styled.a`
   border-radius: var(--spacing-base);
 
   margin-left: auto;
-  margin-right: auto;
+  margin-right: 0;
+
+  animation: blink 1.2s linear infinite;
+
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
 
   &:hover {
     background: #cbcdfb70;
+  }
+
+  @media (max-width: 768px) {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
   }
 `;

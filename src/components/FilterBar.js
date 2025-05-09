@@ -4,68 +4,140 @@ import {
   SwitchContainer,
   Switch,
 } from "../styles/Herosection.style";
+import styled from "styled-components";
 
-export default function FilterBarWrapper() {
+const SelectPair = styled.div`
+  display: flex;
+  gap: 8px;
+  width: 100%;
+
+  & > select {
+    flex: 1;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    padding-right: 32px;
+  }
+`;
+
+export default function FilterBarWrapper({ handleFilter }) {
+  // Generate year options dynamically
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [];
+  for (let year = currentYear; year >= 1970; year -= 5) {
+    yearOptions.push(year);
+  }
+
+  // Generate price options in ETB
+  const priceOptions = [
+    { value: "", label: "Any" },
+    { value: "500000", label: "500,000" },
+    { value: "750000", label: "750,000" },
+    { value: "1000000", label: "1,000,000" },
+    { value: "1500000", label: "1,500,000" },
+    { value: "2000000", label: "2,000,000" },
+    { value: "3000000", label: "3,000,000" },
+  ];
+
   return (
     <FilterBar>
       <FilterBarItem>
         <div>
-          <label htmlFor="">Year</label>
-          <select name="start" id="" defaultValue="">
-            <option value="" hidden>
-              From
-            </option>
-            <option value="">Any</option>
-            <option value="1980">1980</option>
-            <option value="1990">1990</option>
-            <option value="2000">2000</option>
-            <option value="2010">2010</option>
-            <option value="2020">2020</option>
-          </select>
-          <select name="end" id="">
-            <option value="" hidden>
-              To
-            </option>
-            <option value="">Any</option>
-            <option value="1980">1980</option>
-            <option value="1990">1990</option>
-            <option value="2000">2000</option>
-            <option value="2010">2010</option>
-            <option value="2020">2020</option>
-          </select>
+          <label htmlFor="start-year">Year</label>
+          <SelectPair>
+            <select
+              name="start"
+              id="start-year"
+              defaultValue=""
+              onChange={handleFilter}
+            >
+              <option value="" hidden>
+                From
+              </option>
+              <option value="">Any</option>
+              {yearOptions.map((year) => (
+                <option key={`from-${year}`} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+            <select
+              name="end"
+              id="end-year"
+              defaultValue=""
+              onChange={handleFilter}
+            >
+              <option value="" hidden>
+                To
+              </option>
+              <option value="">Any</option>
+              {yearOptions.map((year) => (
+                <option key={`to-${year}`} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </SelectPair>
         </div>
       </FilterBarItem>
       <FilterBarItem>
         <div>
-          <label htmlFor="">Price</label>
-          <select name="min" id="" defaultValue="">
-            <option value="" hidden>
-              Min
-            </option>
-            <option value="">Any</option>
-            <option value="500000">500000</option>
-            <option value="750000">750000</option>
-            <option value="1000000">1000000</option>
-            <option value="1500000">1500000</option>
-            <option value="2000000">2000000</option>
-          </select>
-          <select name="max" id="">
-            <option value="" hidden>
-              Max
-            </option>
-            <option value="">Any</option>
-            <option value="500000">500000</option>
-            <option value="750000">750000</option>
-            <option value="1000000">1000000</option>
-            <option value="1500000">1500000</option>
-            <option value="2000000">2000000</option>
-          </select>
+          <label htmlFor="min-price">Price</label>
+          <SelectPair>
+            <select
+              name="min"
+              id="min-price"
+              defaultValue=""
+              onChange={handleFilter}
+            >
+              <option value="" hidden>
+                Min
+              </option>
+              {priceOptions.map((option) => (
+                <option key={`min-${option.value}`} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <select
+              name="max"
+              id="max-price"
+              defaultValue=""
+              onChange={handleFilter}
+            >
+              <option value="" hidden>
+                Max
+              </option>
+              {priceOptions.map((option) => (
+                <option key={`max-${option.value}`} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </SelectPair>
         </div>
       </FilterBarItem>
       <FilterBarItem>
         <div>
-          <label htmlFor="">Transmission</label>
-          <select name="transmission" id="" defaultValue="">
+          <label htmlFor="transmission">Transmission</label>
+          <select
+            name="transmission"
+            id="transmission"
+            defaultValue=""
+            onChange={handleFilter}
+            style={{
+              width: "100%",
+              appearance: "none",
+              backgroundImage:
+                "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")",
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 8px center",
+              backgroundSize: "16px",
+              paddingRight: "32px",
+            }}
+          >
             <option value="">Any</option>
             <option value="automatic">Automatic</option>
             <option value="manual">Manual</option>
@@ -74,10 +146,15 @@ export default function FilterBarWrapper() {
       </FilterBarItem>
       <FilterBarItem>
         <div>
-          <label htmlFor="loan">Loan</label>
+          <label htmlFor="loan-checkbox">Loan</label>
           <SwitchContainer>
-            <input type="checkbox" name="loan" id="" />
-            <Switch />
+            <input
+              type="checkbox"
+              name="loan"
+              id="loan-checkbox"
+              onChange={handleFilter}
+            />
+            <Switch aria-hidden="true" />
             <span>Available</span>
           </SwitchContainer>
         </div>
