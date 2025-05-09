@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import styled from "styled-components";
 
 import Car from "../components/Car";
 import EmptyState from "../components/EmptyState";
@@ -17,6 +18,66 @@ import { ModalContainer } from "../styles/Modal.style";
 
 import { getCarsAPI } from "../data/api";
 
+const ActiveFiltersContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  min-height: 32px;
+`;
+
+const FilterTag = styled.div`
+  display: flex;
+  align-items: center;
+  background: var(--clr-primary-50);
+  border: 1px solid var(--clr-primary-200);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--clr-primary-700);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  button {
+    background: none;
+    border: none;
+    color: var(--clr-primary-600);
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    line-height: 1;
+
+    &:hover {
+      color: var(--clr-primary-700);
+    }
+  }
+`;
+
+const SearchStats = styled.div`
+  font-size: 18px;
+  color: var(--clr-primary-600);
+  margin-top: 4px;
+  margin-bottom: 2px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: rgba(123, 127, 218, 0.07);
+  display: inline-block;
+  padding: 6px 18px;
+  border-radius: 16px;
+`;
+
+const FiltersSection = styled.div`
+  margin-top: 12px;
+  width: 100%;
+  position: relative;
+  margin-bottom: 8px;
+`;
+
 export default function CarPage() {
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
@@ -31,6 +92,7 @@ export default function CarPage() {
     isLoading,
     isError,
     error,
+    isFetching,
   } = useQuery({
     queryKey: ["cars", pageNumber, filterRules],
     queryFn: () => getCarsAPI(pageNumber, filterRules),
@@ -44,48 +106,6 @@ export default function CarPage() {
       navigate("/error", { replace: true });
     }
   }, [isError, error, navigate]);
-
-  const handleFilter = useCallback(() => {
-    const options = ["start", "end", "min", "max", "transmission"];
-    const newFilterRules = { ...filterRules };
-
-    options.forEach((option) => {
-      const element = document.querySelector(`[name=${option}]`);
-      if (element) {
-        newFilterRules[option] = element.value;
-      }
-    });
-
-    if (searchInputRef.current) {
-      newFilterRules.keyword = searchInputRef.current.value;
-    }
-
-    const loanElement = document.querySelector("[name='loan']");
-    if (loanElement) {
-      newFilterRules.loan = loanElement.checked;
-    }
-
-    setFilterRules(newFilterRules);
-    setPageNumber(1);
-  }, [filterRules]);
-
-  const clearFilter = useCallback(() => {
-    const options = ["start", "end", "min", "max", "transmission", "search"];
-
-    options.forEach((option) => {
-      const element = document.querySelector(`[name=${option}]`);
-      if (element) {
-        element.value = "";
-      }
-    });
-
-    const loanElement = document.querySelector("[name='loan']");
-    if (loanElement) {
-      loanElement.checked = false;
-    }
-
-    setFilterRules({});
-  }, []);
 
   // Window resize handler
   useEffect(() => {
@@ -109,6 +129,109 @@ export default function CarPage() {
     return () => window.removeEventListener("scroll", revealBackToTopButton);
   }, []);
 
+  const handleFilter = useCallback(() => {
+    const options = ["start", "end", "min", "max", "transmission"];
+    const newFilterRules = { ...filterRules };
+
+    options.forEach((option) => {
+      const element = document.querySelector(`[name=${option}]`);
+      if (element) {
+        newFilterRules[option] = element.value;
+      }
+    });
+
+    if (searchInputRef.current) {
+      newFilterRules.keyword = searchInputRef.current.value || "";
+    }
+
+    const loanElement = document.querySelector("[name='loan']");
+    if (loanElement) {
+      // Only add loan property if checked, otherwise remove it
+      if (loanElement.checked) {
+        newFilterRules.loan = true;
+      } else {
+        delete newFilterRules.loan;
+      }
+    }
+
+    // Remove empty filters
+    Object.keys(newFilterRules).forEach((key) => {
+      if (
+        newFilterRules[key] === "" ||
+        newFilterRules[key] === undefined ||
+        newFilterRules[key] === null
+      ) {
+        delete newFilterRules[key];
+      }
+    });
+
+    setFilterRules(newFilterRules);
+    setPageNumber(1);
+  }, [filterRules]);
+
+  const clearFilter = useCallback(() => {
+    const options = ["start", "end", "min", "max", "transmission", "search"];
+
+    options.forEach((option) => {
+      const element = document.querySelector(`[name=${option}]`);
+      if (element) {
+        element.value = "";
+      }
+    });
+
+    const loanElement = document.querySelector("[name='loan']");
+    if (loanElement) {
+      loanElement.checked = false;
+    }
+
+    setFilterRules({});
+    if (searchInputRef.current) {
+      searchInputRef.current.value = "";
+    }
+  }, []);
+
+  // Remove a single filter
+  const removeFilter = (filterKey) => {
+    const updatedFilters = { ...filterRules };
+    delete updatedFilters[filterKey];
+
+    // Also clear the corresponding input
+    const element = document.querySelector(`[name=${filterKey}]`);
+    if (element) {
+      if (element.type === "checkbox") {
+        element.checked = false;
+      } else {
+        element.value = "";
+      }
+    }
+
+    setFilterRules(updatedFilters);
+  };
+
+  // Get readable filter names for display
+  const getFilterName = (key, value) => {
+    switch (key) {
+      case "keyword":
+        return `Search: ${value}`;
+      case "start":
+        return `Year from: ${value}`;
+      case "end":
+        return `Year to: ${value}`;
+      case "min":
+        return `Min price: ${new Intl.NumberFormat("en-US").format(value)} ETB`;
+      case "max":
+        return `Max price: ${new Intl.NumberFormat("en-US").format(value)} ETB`;
+      case "transmission":
+        return `Transmission: ${
+          value.charAt(0).toUpperCase() + value.slice(1)
+        }`;
+      case "loan":
+        return "Loan available";
+      default:
+        return `${key}: ${value}`;
+    }
+  };
+
   const handleBackToTop = () => {
     window.scrollTo({
       top: 0,
@@ -121,6 +244,9 @@ export default function CarPage() {
     handleFilter();
   };
 
+  // Count active filters
+  const activeFilterCount = Object.keys(filterRules).length;
+
   return (
     <>
       <Navbar openInfoModal={() => setShowInfoModal(true)} />
@@ -129,7 +255,7 @@ export default function CarPage() {
         closeInfoModal={() => setShowInfoModal(false)}
       />
 
-      {isLoading && (
+      {(isLoading || isFetching) && (
         <ModalContainer loader>
           <LoaderContainer>
             <Loader />
@@ -146,6 +272,7 @@ export default function CarPage() {
             name="search"
             placeholder="Enter keywords..."
             ref={searchInputRef}
+            defaultValue={filterRules.keyword || ""}
           />
           <div className="actions">
             <input type="submit" value="Search" className="actions__submit" />
@@ -153,20 +280,46 @@ export default function CarPage() {
               type="button"
               onClick={clearFilter}
               className="actions__clear"
+              disabled={activeFilterCount === 0}
+              style={{ opacity: activeFilterCount === 0 ? 0.5 : 1 }}
             >
               Clear
             </button>
           </div>
         </form>
 
-        {windowWidth > 700 ? (
-          <FilterBarWrapper />
-        ) : (
-          <MobileFilterBarWrapper filterUtil={handleFilter} />
+        <FiltersSection>
+          {windowWidth > 700 ? (
+            <FilterBarWrapper handleFilter={handleFilter} />
+          ) : (
+            <MobileFilterBarWrapper filterUtil={handleFilter} />
+          )}
+        </FiltersSection>
+
+        {/* Active filter tags */}
+        <ActiveFiltersContainer>
+          {Object.keys(filterRules)
+            .filter((key) => key !== "sort" && key !== "sortDirection")
+            .map((key) => (
+              <FilterTag key={key}>
+                {getFilterName(key, filterRules[key])}
+                <button onClick={() => removeFilter(key)}>×</button>
+              </FilterTag>
+            ))}
+        </ActiveFiltersContainer>
+
+        {!isLoading && !isFetching && cars && cars.data && (
+          <SearchStats>
+            {cars.data.length > 0
+              ? `Found ${cars.amountOfCars} cars${
+                  activeFilterCount > 0 ? " matching your criteria" : ""
+                }`
+              : "No cars found matching your criteria"}
+          </SearchStats>
         )}
       </ActionWrapper>
 
-      {!isLoading && cars && (
+      {!isLoading && !isFetching && cars && (
         <>
           {cars.data?.length ? (
             <>
